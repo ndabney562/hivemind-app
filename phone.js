@@ -12,9 +12,10 @@ function macCheck(fetchFn, timeoutMs = MAC_TIMEOUT_MS) {
   });
 }
 
-// The answer comes back to the app through the Shortcut's x-success URL ("callback"), or stays in Shortcuts and is
-// picked up later ("sync"). Callback until the spike on Noah's iPhone says otherwise (plan Task 1).
-const RETURN_MODE = "callback";
+// How the answer gets back (spike on Noah's iPhone, 2026-11-01): an x-success URL reopens in Safari, not in the Home
+// Screen app (separate storage), and a page can't read the clipboard on a tap (NotAllowedError). What works: the
+// Shortcut copies its result, the person switches back and pastes it into a box.
+const RETURN_MODE = "paste";
 const SHORTCUT_NAME = "HiveMind Phone";
 // how to build it (public, so friends can read it too)
 const SHORTCUT_RECIPE = "https://github.com/ndabney562/hivemind-app/blob/main/shortcut.md";
@@ -62,28 +63,20 @@ function buildPrompt(question, facts, turns, maxChars = PROMPT_MAX) {
   while (out.length > maxChars && facts.length) { facts.pop(); out = make(); }
   return out;
 }
-function shortcutUrl(prompt, order, returnUrl) {
-  const base = String(returnUrl).split("#")[0];
-  return "shortcuts://x-callback-url/run-shortcut?name=" + encodeURIComponent(SHORTCUT_NAME) + "&input=text&text=" +
-    encodeURIComponent(JSON.stringify({ prompt, order })) + "&x-success=" + encodeURIComponent(base + "#cb=ok") +
-    "&x-error=" + encodeURIComponent(base + "#cb=err") + "&x-cancel=" + encodeURIComponent(base + "#cb=cancel");
+function shortcutUrl(prompt, order) {
+  return "shortcuts://run-shortcut?name=" + encodeURIComponent(SHORTCUT_NAME) + "&input=text&text=" +
+    encodeURIComponent(JSON.stringify({ prompt, order }));
 }
-// null when the URL isn't a Shortcut return; an empty, cut-off or malformed result is a failed turn with the raw
-// text, never a crash (RF1). x-callback adds result= to the URL's query, so both query and hash are read.
-function parseResult(hash, search = "") {
-  const h = new URLSearchParams(String(hash || "").replace(/^#/, ""));
-  for (const [k, v] of new URLSearchParams(String(search || "").replace(/^\?/, ""))) if (!h.has(k)) h.set(k, v);
-  const cb = h.get("cb");
-  if (cb !== "ok" && cb !== "err" && cb !== "cancel") return null;
-  if (cb === "cancel") return { model: null, ok: false, answer: "", cut: false, cancel: true };
-  if (cb === "err") return { model: null, ok: false, answer: h.get("errorMessage") || "", cut: false, cancel: false };
-  const raw = h.get("result") || "";
+// What the person pasted back: the Shortcut's {"model","ok","answer"}. Empty, cut-off or malformed text is a failed
+// turn with the raw text, never a crash (RF1).
+function parseAnswer(text) {
+  const raw = String(text || "").trim();
   let r;
-  try { r = JSON.parse(raw); } catch (e) { return { model: null, ok: false, answer: raw, cut: false, cancel: false }; }
-  if (!r || typeof r !== "object") return { model: null, ok: false, answer: raw, cut: false, cancel: false };
+  try { r = JSON.parse(raw); } catch (e) { return { model: null, ok: false, answer: raw, cut: false }; }
+  if (!r || typeof r !== "object") return { model: null, ok: false, answer: raw, cut: false };
   const id = String(r.model || "").replace(/^phone:/, "");
   const answer = typeof r.answer === "string" ? r.answer : "";
-  return { model: PHONE_AIS.includes(id) ? "phone:" + id : null, ok: r.ok === true && !!answer.trim(), answer, cut: !!r.cut, cancel: false };
+  return { model: PHONE_AIS.includes(id) ? "phone:" + id : null, ok: r.ok === true && !!answer.trim(), answer, cut: !!r.cut };
 }
 
 // phone turns wait here until the Mac confirms them: IndexedDB, or memory when this phone can't save (RF3)
@@ -150,7 +143,7 @@ async function confirmSynced(ids) {
 
 if (typeof module !== "undefined") {
   module.exports = { MAC_TIMEOUT_MS, macCheck, RETURN_MODE, SHORTCUT_RECIPE, kindOf, orderFor, pickOrder, buildPrompt, shortcutUrl,
-                     parseResult, questionProblem, settledIds, queueTurn, pendingTurns, confirmSynced };
+                     parseAnswer, questionProblem, settledIds, queueTurn, pendingTurns, confirmSynced };
 }
 
 (() => {
@@ -288,25 +281,35 @@ if (typeof module !== "undefined") {
     store(PENDING, { id, question: q, kind, order, thread_id: typeof threadId === "string" ? threadId : null, ts: new Date().toISOString() });
     box.value = "";
     box.dispatchEvent(new Event("input", { bubbles: true }));
-    location.href = shortcutUrl(prompt, order, location.href.split("#")[0].split("?")[0]);
-    if (RETURN_MODE === "sync") notice("Answered in Shortcuts. HiveMind picks it up at the next sync.");
+    awaitAnswer();
+    location.href = shortcutUrl(prompt, order);
   }
 
-  // the Shortcut sends the person back here with #cb=ok&result=… or #cb=err&errorMessage=…
-  async function onReturn() {
-    const r = parseResult(location.hash, location.search);
-    if (!r) return;
-    history.replaceState(null, "", location.pathname);
+  // While a question is out in Shortcuts: a card with the paste box (the way back) and Cancel. It comes back after a
+  // reload, since the question stays pending until it is answered or cancelled.
+  function awaitAnswer() {
     const p = store(PENDING);
+    if (!p || $id("phone-wait")) return;
+    const card = mk("div", { className: "card", id: "phone-wait", role: "status" });
+    card.style.cssText = "margin:8px 0;display:grid;gap:8px";
+    const box = mk("textarea", { id: "phone-paste", rows: 3, className: "field", placeholder: "Tap here, then Paste" });
+    box.style.cssText = "width:100%;font-size:16px";
+    box.setAttribute("aria-label", "Paste the answer from Shortcuts");
+    box.addEventListener("input", () => { if (box.value.trim()) answered(p, parseAnswer(box.value)); });
+    const cancel = mk("button", { type: "button", className: "btn ghost", id: "phone-cancel" }, "Cancel");
+    cancel.onclick = () => { unstore(PENDING); card.remove(); restore(p); };
+    const help = mk("a", { href: HM.shortcutLink || SHORTCUT_RECIPE, target: "_blank", rel: "noopener" }, "No HiveMind Phone Shortcut yet?");
+    const row = mk("div");
+    row.style.cssText = "display:flex;gap:12px;align-items:center;flex-wrap:wrap";
+    row.append(cancel, help);
+    card.append(mk("b", {}, "Asked in Shortcuts: \u201c" + p.question.slice(0, 80) + "\u201d"),
+      mk("span", {}, "When it's done, come back here, tap the box and choose Paste."), box, row);
+    ($id("result") || document.body).append(card);
+  }
+  HM.awaitAnswer = awaitAnswer;
+  async function answered(p, r) {
     unstore(PENDING);
-    if (!p) return;
-    if (r.cancel) { restore(p); return; }
-    if (!r.ok && !r.model && /couldn.?t find|not found|no shortcut|doesn.?t exist/i.test(r.answer)) {
-      restore(p);
-      notice("The HiveMind Phone Shortcut isn't on this phone yet.",
-             mk("a", { className: "btn ghost", href: HM.shortcutLink || SHORTCUT_RECIPE, target: "_blank", rel: "noopener" }, "Install HiveMind Phone"));
-      return;
-    }
+    $id("phone-wait")?.remove();
     const turn = { id: p.id, question: p.question, answer: r.answer, model: r.model || "phone:" + p.order[0], kind: p.kind,
                    ok: r.ok, thread_id: p.thread_id, ts: p.ts, cut: r.cut };
     await queueTurn(turn);  // the friend copy keeps it here for good: its history lives on the phone
@@ -315,22 +318,10 @@ if (typeof module !== "undefined") {
     if (HM.canSave === false) notice("This phone can't save chats, so this one is gone when the app closes.");
     if (turn.ok) store(RECENT, (store(RECENT) || []).concat({ thread: p.thread_id, q: p.question, a: r.answer }).slice(-PROMPT_TURNS));
   }
-  window.addEventListener("hashchange", onReturn);
-  // the question goes back in the box when nothing comes back: cancelled in Shortcuts, Shortcut missing (Shortcuts
-  // shows its own alert), or the person just switched back
   function restore(p) {
     const box = $id("task");
     if (box && !box.value.trim()) { box.value = p.question; box.dispatchEvent(new Event("input", { bubbles: true })); }
   }
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState !== "visible") return;
-    setTimeout(() => {
-      const p = store(PENDING);
-      if (!p || parseResult(location.hash, location.search)) return;
-      unstore(PENDING);
-      restore(p);
-    }, 1500);
-  });
 
   // the Mac is back: hand it the phone turns; the queue empties only for ids the Mac confirmed (RF2)
   let syncing = false;
@@ -371,5 +362,6 @@ if (typeof module !== "undefined") {
     phoneSend();
   };
 
-  onReturn().then(() => HM.checkMac()).then((up) => { if (up) syncTurns(); });
+  awaitAnswer();
+  HM.checkMac().then((up) => { if (up) syncTurns(); });
 })();

@@ -1,8 +1,10 @@
 # HiveMind Phone Shortcut (build by hand)
 
 When the Mac doesn't answer, the HiveMind app on the iPhone asks the person's own AIs through one Shortcut named
-**HiveMind Phone**. The app opens it with `shortcuts://x-callback-url/run-shortcut?name=HiveMind%20Phone&input=text&text=…`
-and Shortcuts sends the answer back to the app (`#cb=ok&result=…`, or `#cb=err&errorMessage=…`).
+**HiveMind Phone**. The app opens it with `shortcuts://run-shortcut?name=HiveMind%20Phone&input=text&text=…`; the
+Shortcut copies its result to the clipboard, and you switch back to HiveMind and paste it into the box the app shows.
+(A return link would reopen in Safari, not in the Home Screen app, so the answer comes back by paste: tested on an
+iPhone 16 Pro, iOS 26, 2026-11-01.)
 
 Build it once per phone; it only uses apps the person is already signed in to.
 
@@ -11,7 +13,7 @@ Build it once per phone; it only uses apps the person is already signed in to.
 - **Input** (Shortcut Input, text): JSON `{"prompt": "...", "order": ["claude-app", "apple-cloud", ...]}`.
   `prompt` is the full question (About you and recent turns already added by the app). `order` lists the AIs to try,
   best first, and only ones the person ticked under Settings › Your AIs.
-- **Output** (Stop and Output, a Dictionary, which Shortcuts sends as JSON text):
+- **Output** (Copy to Clipboard, then Stop and Output; a Dictionary becomes JSON text):
   `{"model": "<id>", "ok": true|false, "answer": "<text>"}`. `model` is the id that answered (or the last one tried).
 
 ## AI ids and the action each one uses
@@ -38,7 +40,8 @@ Build it once per phone; it only uses apps the person is already signed in to.
    2. End If.
 5. After the loop: **If** `Answer` **has any value** → **Dictionary** `model` = `Model`, `ok` = true (Boolean), `answer` = `Answer`.
    **Otherwise** → **Dictionary** `model` = `Model`, `ok` = false, `answer` = `No AI on this phone answered`.
-6. **Stop and Output** the Dictionary.
+6. **Copy to Clipboard** the Dictionary.
+7. **Stop and Output** the Dictionary.
 
 Leave out a branch for an app the phone doesn't have, and untick it under Your AIs. The model is picked by tapping the
 blue word right after "Use" in the Use Model action (the menu lists Cloud, Cloud Pro, On-Device and ChatGPT).
@@ -50,4 +53,5 @@ blue word right after "Use" in the Use Model action (the menu lists Cloud, Cloud
 ## Check it
 
 On the iPhone, open HiveMind with the Mac off (or Tailscale off), tick your AIs under Settings › Your AIs, and ask
-"define osmosis". Shortcuts opens, answers, and returns to HiveMind with the answer tagged "phone only, not checked".
+"define osmosis". Shortcuts opens and answers. Switch back to HiveMind (swipe along the bottom edge), tap the box, choose **Paste**: the
+answer shows tagged "phone only, not checked".
