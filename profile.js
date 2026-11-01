@@ -65,7 +65,7 @@
     save.onclick = async () => {
       if (await act({ action: "welcome", name: val("welcome-name"), does: val("welcome-does"), goals: val("welcome-goals"), style: style.value })) done();
     };
-    skip.onclick = async () => { if (await act({ action: "welcome" })) done(); };
+    skip.onclick = async () => { await act({ action: "welcome" }); done(); };  // Skip always closes, even if saving failed
     const row = mk("div"); row.style.cssText = "display:flex;gap:8px;justify-content:flex-end";
     row.append(skip, save);
     d.append(mk("h3", { id: "welcome-title" }, "Welcome to HiveMind"),
@@ -78,7 +78,9 @@
     d.showModal();
     document.activeElement?.blur?.();  // on a phone the keyboard would cover Save and Skip
   }
-  const maybeWelcome = (p) => { if (p && !p.welcomed && !asked) { asked = true; welcome(); } };
+  // Not while HiveMind can't reach the Mac (phone.js): its answers would go nowhere. It opens once the Mac is back.
+  const offline = () => HM.mode === "phone" && !HM.noMac;
+  const maybeWelcome = (p) => { if (p && !p.welcomed && !asked && !offline()) { asked = true; welcome(); } };
 
   // About you: a way back to the start page until it is answered
   const again = mk("button", { type: "button", className: "btn good", hidden: true }, "Fill in the basics");
