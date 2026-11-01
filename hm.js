@@ -30,6 +30,8 @@ window.HM = (() => {
     },
     api(path, body) { return window.api(path, body); },  // index.html's api(): adds the token
     noMac: HM_NO_MAC,
+    // P-22: in the friend copy, "No HiveMind Phone Shortcut yet?" opens the setup page with the signed Shortcut
+    shortcutLink: HM_NO_MAC ? "get.html#shortcut" : undefined,
     fresh: false,  // reuse.js: the next send skips HiveMind's saved answer (P-6)
     takeFresh() { const f = this.fresh; this.fresh = false; return f; },
     templateId(sent) { return undefined; },  // templates.js: the template the message was started from (P-8)

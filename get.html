@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Get HiveMind</title>
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png?v=2">
+<link rel="apple-touch-icon" href="icons/icon-180.png?v=2">
+<meta name="theme-color" content="#fbfbfa" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#161618" media="(prefers-color-scheme: dark)">
+<!-- P-22: the page Noah sends friends. Relative links only, so it works wherever the friend copy is published. -->
+<style>
+:root {
+  --bg: #fbfbfa; --panel: #ffffff; --ink: #1c1c1e; --muted: #6e6e73; --line: #e5e3de;
+  --accent: #3b5bdb; --accent-ink: #ffffff; --accent-soft: #e8edfc;
+  --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.06);
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #161618; --panel: #212124; --ink: #ececef; --muted: #a0a0a8; --line: #2f2f34;
+          --accent: #7c9bff; --accent-ink: #10131c; --accent-soft: #252d45;
+          --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.35); }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); -webkit-font-smoothing: antialiased;
+       font: 16px/1.55 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif; }
+main { max-width: 560px; margin: 0 auto; padding: max(24px, env(safe-area-inset-top)) 16px 48px; }
+header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+header img { width: 48px; height: 48px; border-radius: 11px; }
+h1 { font-size: 26px; line-height: 1.2; margin: 0; }
+h2 { font-size: 17px; margin: 0 0 4px; }
+p { margin: 0 0 8px; }
+.lead { color: var(--muted); margin: 8px 0 20px; }
+ol { list-style: none; padding: 0; margin: 0; counter-reset: step; }
+li { counter-increment: step; background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+     box-shadow: var(--shadow); padding: 16px 16px 16px 60px; margin-bottom: 12px; position: relative;
+     scroll-margin-top: 16px; }
+li::before { content: counter(step); position: absolute; left: 16px; top: 16px; width: 30px; height: 30px;
+             border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-weight: 700;
+             display: grid; place-items: center; }
+li:target { border-color: var(--accent); }
+.btn { display: inline-block; margin-top: 6px; padding: 10px 16px; min-height: 44px; border-radius: 10px;
+       background: var(--accent); color: var(--accent-ink); font-weight: 600; text-decoration: none; }
+.meta { color: var(--muted); font-size: 14px; }
+section { margin-top: 24px; }
+a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="icons/icon-180.png?v=2" alt="">
+    <h1>Get HiveMind</h1>
+  </header>
+  <p class="lead">HiveMind sends your question to the best AI you already have on your iPhone (Apple Intelligence,
+    the Claude app or the ChatGPT app) under your own sign-ins. It's free and takes about 5 minutes to set up.</p>
+
+  <p class="meta">You need: an iPhone with Safari and the Shortcuts app, plus at least one of these: Apple
+    Intelligence turned on, or the Claude or ChatGPT app installed and signed in.</p>
+
+  <ol>
+    <li id="app">
+      <h2>Add HiveMind to your Home Screen</h2>
+      <p>Open the app in Safari, tap Share, then <b>Add to Home Screen</b>.</p>
+      <a class="btn" href="./">Open HiveMind</a>
+    </li>
+    <li id="shortcut">
+      <h2>Get the HiveMind Phone Shortcut</h2>
+      <p>Tap the button, then <b>Add Shortcut</b>. Keep its name, <b>HiveMind Phone</b>: the app looks for it by name.</p>
+      <a class="btn" href="HiveMind%20Phone.shortcut">Get the Shortcut</a>
+    </li>
+    <li id="ais">
+      <h2>Pick your AIs</h2>
+      <p>Open HiveMind from your Home Screen, go to <b>Settings › Your AIs</b> and tick the ones you have.</p>
+    </li>
+    <li id="ask">
+      <h2>Ask something</h2>
+      <p>HiveMind opens Shortcuts, which asks your AI and copies the answer. Switch back to HiveMind and paste it
+        into the box it shows.</p>
+    </li>
+  </ol>
+
+  <section>
+    <h2>Your chats stay yours</h2>
+    <p class="meta">Chats are kept on this phone. A question goes only to the AIs you ticked, under your own
+      accounts. Nobody else sees it, including whoever sent you this link.</p>
+  </section>
+  <section>
+    <h2>Not on an iPhone?</h2>
+    <p class="meta">Android phones and computers can't answer yet. That's the next thing being built.</p>
+  </section>
+</main>
+</body>
+</html>
