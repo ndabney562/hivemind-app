@@ -24,8 +24,9 @@ self.addEventListener("fetch", (e) => {
       const timer = setTimeout(() => stop.abort(), 3000);
       const r = await fetch(e.request, { signal: stop.signal });
       clearTimeout(timer);
-      if (r.ok) cache.put(key, r.clone());
-      return r;
+      if (r.ok) { cache.put(key, r.clone()); return r; }
+      // the Mac is awake but the dashboard isn't running: tailscale serve answers 502, so open the kept shell instead
+      return (await cache.match(key, { ignoreSearch: true })) || r;
     } catch (err) {
       return (await cache.match(key, { ignoreSearch: true })) || Response.error();
     }

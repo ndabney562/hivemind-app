@@ -19,7 +19,7 @@ Build it once per phone; it only uses apps the person is already signed in to.
 | id | action |
 |---|---|
 | `apple-local` | Apple Intelligence **Use Model**, model **On-Device** |
-| `apple-cloud` | Apple Intelligence **Use Model**, model **Private Cloud Compute** |
+| `apple-cloud` | Apple Intelligence **Use Model**, model **Cloud** (Private Cloud Compute) |
 | `claude-app` | Claude app **Ask Claude** (needs the Claude app, signed in) |
 | `chatgpt-app` | ChatGPT app **Ask ChatGPT** (needs the ChatGPT app, signed in) |
 
@@ -32,7 +32,7 @@ Build it once per phone; it only uses apps the person is already signed in to.
    1. **If** `Answer` **does not have any value** (Shortcuts has no "break", so this check is how it can stop at the first non-empty answer):
       1. **Set Variable** `Model` to Repeat Item.
       2. **If** Repeat Item **is** `apple-local` → **Use Model** (On-Device) with `Prompt` → **Set Variable** `Answer`.
-      3. **If** Repeat Item **is** `apple-cloud` → **Use Model** (Private Cloud Compute) with `Prompt` → **Set Variable** `Answer`.
+      3. **If** Repeat Item **is** `apple-cloud` → **Use Model** (Cloud) with `Prompt` → **Set Variable** `Answer`.
       4. **If** Repeat Item **is** `claude-app` → **Ask Claude** with `Prompt` → **Set Variable** `Answer`.
       5. **If** Repeat Item **is** `chatgpt-app` → **Ask ChatGPT** with `Prompt` → **Set Variable** `Answer`.
    2. End If.
@@ -40,8 +40,12 @@ Build it once per phone; it only uses apps the person is already signed in to.
    **Otherwise** → **Dictionary** `model` = `Model`, `ok` = false, `answer` = `No AI on this phone answered`.
 6. **Stop and Output** the Dictionary.
 
-Leave out a branch for an app the phone doesn't have. If a branch's app is missing or signed out, its action fails or
-returns nothing, and the loop moves on to the next id.
+Leave out a branch for an app the phone doesn't have, and untick it under Your AIs. The model is picked by tapping the
+blue word right after "Use" in the Use Model action (the menu lists Cloud, Cloud Pro, On-Device and ChatGPT).
+
+**When an AI fails.** An action that returns nothing (empty answer) lets the loop move on to the next id. An action that
+*errors* (app signed out, no network) usually stops the whole Shortcut instead; HiveMind then shows the turn as
+"phone only, failed" with the error, and you can resend it or pick another AI in Options. Sign in to the app to fix it.
 
 ## Check it
 
