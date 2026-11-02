@@ -400,7 +400,7 @@ function renderPhone(p, projects) {
       el("button", { class: "btn bad", "aria-label": "Remove project " + pr.name,
         onclick: async () => { await api("/api/phone/projects", { action: "remove", name: pr.name }).catch(showErr); load(); } }, "Remove")));
   }
-  const path = el("input", { class: "field", placeholder: "Folder, e.g. ~/moshi-and-pals", "aria-label": "Project folder" });
+  const path = el("input", { class: "field", placeholder: "Folder, e.g. ~/eugeneicks", "aria-label": "Project folder" });
   box.append(el("div", { class: "inline-form" }, path, el("button", { class: "btn", onclick: async () => {
     try { await api("/api/phone/projects", { action: "add", path: path.value.trim() }); load(); } catch (e) { showErr(e); }
   } }, "Add")));
