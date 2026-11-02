@@ -18,12 +18,10 @@ const fromTemplate = (t, sent) => {
   };
   HM.templateId = (sent) => { const t = used; used = null; return fromTemplate(t, sent); };
   const row = mk("div", { className: "tpl-row", ariaLabel: "Templates" });
-  row.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px";
   const pick = mk("select", { className: "pick", ariaLabel: "Template" });
   function draw() {
     row.replaceChildren(...list.map((t) => {
-      const b = mk("button", { type: "button", className: "btn ghost", title: t.text }, t.name);
-      b.style.cssText = "min-height:44px;font-size:14px";
+      const b = mk("button", { type: "button", className: "tpl-chip", title: t.text }, t.name);
       b.onclick = () => fill(t);
       return b;
     }));
@@ -31,7 +29,8 @@ const fromTemplate = (t, sent) => {
     drawSettings();
   }
   pick.onchange = () => { const t = list.find((x) => x.id === pick.value); pick.value = ""; if (t) fill(t); };
-  const empty = () => !$("convo") || !$("convo").childNodes.length;
+  // #result holds the question being answered right now: the chips go as soon as it is sent (review 2026-11-01)
+  const empty = () => ["convo", "result"].every((id) => !$(id) || !$(id).childNodes.length);
   const showRow = () => { row.hidden = !list.length || !empty(); };
   async function load() {
     try { list = (await HM.api("/api/templates")).templates || []; } catch (e) { return; }
@@ -76,6 +75,7 @@ const fromTemplate = (t, sent) => {
     };
     actions.append(b);
   });
+  for (const id of ["convo", "result"]) if ($(id)) new MutationObserver(showRow).observe($(id), { childList: true });
   const composer = $("composer");
   if (composer) composer.prepend(row);
   if ($("opts")) $("opts").append(pick);

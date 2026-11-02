@@ -3,15 +3,19 @@
 // IndexedDB): "Your answer is ready", or an alert such as "Claude is logged out". Any failure shows a generic line.
 // It also keeps the app shell (page, scripts, icons) so the app opens with the Mac off (phone-only mode). Network
 // first, so a running Mac always serves fresh files; /api/* is never cached.
-const SHELL_CACHE = "hivemind-shell-v1";
+const SHELL_CACHE = "hivemind-shell-v2";
 // Relative to this script, so the friend copy works under a GitHub Pages subpath too.
-const SHELL = ["./", "manifest.webmanifest", "hm.js", "forecast.js", "judge.js", "reuse.js", "templates.js", "compare.js",
-               "profile.js", "phone.js", "setup.js", "icons/icon-180.png", "icons/icon-192.png?v=2", "icons/icon-512.png?v=2"];
+const SHELL = ["./", "manifest.webmanifest", "app.css", "hm.js", "app.js", "forecast.js", "judge.js", "reuse.js",
+               "templates.js", "compare.js", "profile.js", "phone.js", "setup.js",
+               "icons/icon-180.png", "icons/icon-192.png?v=2", "icons/icon-512.png?v=2"];
 const BASE = new URL("./", self.location.href);
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(SHELL_CACHE).then((c) => Promise.all(SHELL.map((u) => c.add(u).catch(() => {})))).then(() => self.skipWaiting()));
 });
-self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
+// v1 held the page from before app.css/app.js were split out of it: drop older shells
+self.addEventListener("activate", (e) => e.waitUntil(caches.keys()
+  .then((ks) => Promise.all(ks.filter((k) => k.startsWith("hivemind-shell-") && k !== SHELL_CACHE).map((k) => caches.delete(k))))
+  .then(() => self.clients.claim())));
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET" || url.origin !== BASE.origin || !url.pathname.startsWith(BASE.pathname) ||

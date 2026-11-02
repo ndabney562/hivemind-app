@@ -230,7 +230,10 @@ if (typeof module !== "undefined") {
   HM.forcedAI = null;  // the composer's Apple / Claude / ChatGPT pick (setup.js, Task 5)
 
   function notice(text, ...extra) {
+    // the same notice again replaces the old one: each tap of Send stacked another copy (Alan's test, 2026-11-01)
+    for (const old of document.querySelectorAll(".phone-notice")) if (old.dataset.text === text) old.remove();
     const box = mk("div", { className: "phone-notice", role: "status" });
+    box.dataset.text = text;
     box.style.cssText = "display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0;font-size:14px;color:var(--muted)";
     box.append(mk("span", {}, text), ...extra);
     ($id("result") || document.body).append(box);
